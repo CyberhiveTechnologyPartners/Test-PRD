@@ -1,0 +1,15 @@
+C4Container
+  title Container view - home aggregate endpoint
+  Person(exec, "Member Executive", "Reads home screen")
+  Container(spa, "Member Web App", "SPA", "Renders grade, tiles and lists")
+  Container(api, "Home Aggregate API", "HTTP service", "Composes one home payload")
+  ContainerDb(cache, "Summary Cache", "Key-value", "Holds per-member AI summaries")
+  SystemDb_Ext(records, "Member Records", "Posture history, activity, retainer")
+  System_Ext(ai, "AI Summary Service", "Plain-language generation")
+  System_Ext(threat, "Sector ThreatCon Feed", "Current sector alert level")
+  Rel(exec, spa, "Opens cyber home")
+  Rel(spa, api, "Gets home payload")
+  Rel(api, records, "Reads member data")
+  Rel(api, cache, "Reads writes summary")
+  Rel(api, ai, "Requests 30-day summary")
+  Rel(api, threat, "Reads current level")
