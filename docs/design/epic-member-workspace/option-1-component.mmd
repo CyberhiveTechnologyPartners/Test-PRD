@@ -1,0 +1,17 @@
+C4Component
+  title Component view - Home Aggregate API
+  Container_Boundary(api, "Home Aggregate API") {
+    Component(composer, "Home payload composer", "Handler", "Assembles one response")
+    Component(posture, "Grade and trend builder", "Logic", "Current grade, four quarters, top action")
+    Component(kpi, "KPI tile builder", "Logic", "Incidents, SLA, coverage, remediation, hours")
+    Component(attention, "Needs-attention builder", "Logic", "Open items with owner and due date")
+    Component(threatline, "ThreatCon line provider", "Logic", "Level plus fixed explanation")
+    Component(summary, "AI summary client", "Adapter", "Prompts and caches summary")
+    ComponentDb(cachestore, "Summary cache store", "Key-value", "Last summary per member")
+  }
+  Rel(composer, posture, "Requests grade trend")
+  Rel(composer, kpi, "Requests five tiles")
+  Rel(composer, attention, "Requests open items")
+  Rel(composer, threatline, "Requests level explanation")
+  Rel(composer, summary, "Requests plain-language summary")
+  Rel(summary, cachestore, "Reads writes entry")
