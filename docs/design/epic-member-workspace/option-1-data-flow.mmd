@@ -1,0 +1,26 @@
+flowchart TB
+  user[Member Executive or IT Lead]
+  page[Cyber home page]
+  endpoint[Home aggregate endpoint]
+  records[(Member records and fixtures)]
+  posture[Grade trend and top action]
+  kpis[Five KPI tiles]
+  items[Open items with owner and due date]
+  threat[ThreatCon level and explanation]
+  sum[AI summary with cache]
+  payload[Single home payload]
+  user --> page
+  page --> endpoint
+  endpoint --> records
+  records --> posture
+  records --> kpis
+  records --> items
+  records --> sum
+  endpoint --> threat
+  posture --> payload
+  kpis --> payload
+  items --> payload
+  threat --> payload
+  sum --> payload
+  payload --> page
+  page --> user
