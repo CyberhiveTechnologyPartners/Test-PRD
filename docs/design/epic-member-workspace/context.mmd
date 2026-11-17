@@ -1,0 +1,13 @@
+C4Context
+  title System context - member cyber workspace
+  Person(exec, "Member Executive", "Reviews posture and risk")
+  Person(itlead, "Member IT Lead", "Tracks open remediation items")
+  System(workspace, "Cyber Member Workspace", "Member home screen for posture, KPIs and open items")
+  System_Ext(ai, "AI Summary Service", "Plain-language generation")
+  System_Ext(threat, "Sector ThreatCon Feed", "Current sector alert level")
+  SystemDb_Ext(records, "Member Records", "Posture history, activity, retainer")
+  Rel(exec, workspace, "Reads grade and summary")
+  Rel(itlead, workspace, "Reads needs-attention list")
+  Rel(workspace, ai, "Requests 30-day summary")
+  Rel(workspace, threat, "Reads current level")
+  Rel(workspace, records, "Reads member data")
