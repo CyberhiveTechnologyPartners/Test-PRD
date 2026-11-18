@@ -1,12 +1,22 @@
 flowchart TB
-  A[Customer at payment step] --> B[Hosted field collects PAN and CVV]
-  B --> C[Contoso Pay returns token and card metadata]
-  C --> D[Portal payment endpoint receives token and save flag]
-  D --> E[Charge requested from Contoso Pay]
-  E -->|declined| F[Failure returned, nothing stored]
-  E -->|succeeded, flag unticked| G[Order confirmed, nothing stored]
-  E -->|succeeded, flag ticked| H[Saved Card Manager checks owner and count]
-  H -->|fewer than five| I[Row written: token, brand, last four, expiry]
-  H -->|already five| J[Success plus cap message returned]
-  I --> K[Checkout list filters by customer and expiry]
-  K --> L[Removal deletes row and calls token delete]
+  CUST[Signed-in customer browser]
+  HF[Contoso Pay hosted field]
+  STEP[Payment step endpoint]
+  SUB[Payment submission handler]
+  MGR[Saved card manager]
+  PAY[Contoso Pay API]
+  DB[(Portal database)]
+  ACC[Account cards endpoint]
+  CUST -->|requests payment step| STEP
+  STEP -->|cards, cap state| CUST
+  CUST -->|card number, CVV| HF
+  HF -->|one-time token| CUST
+  CUST -->|token, save flag| SUB
+  SUB -->|charge request| PAY
+  PAY -->|approved or declined| SUB
+  SUB -->|save when approved| MGR
+  MGR -->|token, brand, last four| DB
+  SUB -->|result, cap message| CUST
+  CUST -->|remove card request| ACC
+  ACC -->|delete owned record| MGR
+  MGR -->|token deletion call| PAY
