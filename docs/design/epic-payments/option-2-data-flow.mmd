@@ -1,0 +1,12 @@
+flowchart TB
+  A[Payment step renders for signed-in customer] --> B[Portal asks service for customer cards]
+  B --> C[Service returns labels, expiry flags, cap state]
+  C --> D[Checkbox enabled or disabled with cap message]
+  D --> E[Hosted field tokenises new card or saved card chosen]
+  E --> F[Portal charges Contoso Pay]
+  F -->|declined| G[Failure shown, no save call made]
+  F -->|succeeded and save ticked| H[Portal posts save request with customer id]
+  H --> I[Ownership guard and cap policy evaluate]
+  I -->|under cap| J[Record written to saved cards database]
+  I -->|at cap| K[Save refused, cap message returned]
+  J --> L[Account page removal deletes row and gateway token]
