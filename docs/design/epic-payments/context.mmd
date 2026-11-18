@@ -1,0 +1,10 @@
+C4Context
+  title System Context - Saved cards for checkout payments
+  Person(customer, "Customer", "Signed-in shopper paying at checkout")
+  System(portal, "Contoso Portal", "Storefront checkout and account pages")
+  System_Ext(pay, "Contoso Pay", "Hosted card field, tokens, charges")
+  System_Ext(idp, "Identity Provider", "Customer sign-in and sessions")
+  Rel(customer, portal, "Checks out, manages cards", "HTTPS")
+  Rel(customer, pay, "Types card details", "Hosted field")
+  Rel(portal, pay, "Charges and deletes tokens", "REST")
+  Rel(portal, idp, "Validates customer session", "OIDC")
