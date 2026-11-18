@@ -1,0 +1,18 @@
+C4Component
+  title Component view - Card Token Worker
+  ContainerQueue(q, "Card Events Queue", "Broker", "Save and delete intents")
+  Component(dispatch, "Event Dispatcher", "Consumer loop", "Routes card events")
+  Component(idem, "Idempotency Filter", "Guard", "Drops duplicate events")
+  Component(cap, "Cap And Ownership Rules", "Policy", "Five cards, one owner")
+  Component(writer, "Card Record Writer", "Data access", "Stores token metadata")
+  Component(deleter, "Token Deletion Sender", "HTTP client", "Retries gateway delete")
+  ContainerDb(db, "Portal Database", "SQL", "Saved card records")
+  System_Ext(pay, "Contoso Pay", "Payment gateway")
+  Rel(q, dispatch, "Delivers card events", "AMQP")
+  Rel(dispatch, idem, "Checks event identifier", "in process")
+  Rel(idem, cap, "Passes save events", "in process")
+  Rel(cap, writer, "Allows record write", "in process")
+  Rel(writer, db, "Inserts card row", "SQL")
+  Rel(dispatch, deleter, "Passes delete events", "in process")
+  Rel(deleter, pay, "Calls token deletion", "HTTPS")
+  Rel(deleter, db, "Removes card row", "SQL")
