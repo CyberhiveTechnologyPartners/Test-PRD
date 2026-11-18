@@ -1,12 +1,13 @@
 C4Container
-  title Container view - Saved cards in the portal application
+  title Option A - containers with saved cards inside the portal application
   Person(customer, "Customer", "Signed-in shopper")
-  Container(spa, "Checkout Web App", "TypeScript", "Payment step and account cards UI")
-  Container(app, "Portal Application", "Server", "Checkout, payments, accounts")
-  ContainerDb(db, "Portal Database", "SQL", "Orders and saved card records")
-  System_Ext(pay, "Contoso Pay", "Hosted field and tokens")
-  Rel(customer, spa, "Uses checkout page", "HTTPS")
-  Rel(spa, pay, "Mounts hosted field", "JS SDK")
-  Rel(spa, app, "Submits payment request", "JSON")
-  Rel(app, db, "Reads writes card records", "SQL")
-  Rel(app, pay, "Charges and deletes tokens", "REST")
+  Container(web, "Checkout Web UI", "Browser JS", "Payment step and account cards page")
+  Container(app, "Portal Application", "Server app", "Checkout, orders, saved cards module")
+  ContainerDb(db, "Portal Database", "SQL", "Orders and saved card tokens")
+  System_Ext(pay, "Contoso Pay", "PSP", "Hosted field, tokens, charges")
+  Rel(customer, web, "Selects or saves card")
+  Rel(web, pay, "Loads hosted field")
+  Rel(pay, web, "Returns one-time token")
+  Rel(web, app, "Submits payment request")
+  Rel(app, pay, "Charges and deletes tokens")
+  Rel(app, db, "Reads writes saved cards")
