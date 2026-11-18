@@ -1,0 +1,18 @@
+C4Component
+  title Component view - Saved Cards Service
+  Container(app, "Portal Application", "Server", "Checkout caller")
+  Component(api, "Cards API", "HTTP endpoints", "List, save, remove")
+  Component(guard, "Ownership Guard", "Policy", "Binds card to customer")
+  Component(cap, "Cap Policy", "Rule", "Maximum of five")
+  Component(view, "Card Descriptor", "Formatter", "Brand, last four, expiry")
+  Component(repo, "Card Repository", "Data access", "Reads and writes rows")
+  Component(tok, "Pay Token Client", "HTTP client", "Deletes gateway token")
+  ContainerDb(vdb, "Saved Cards Database", "SQL", "Card records")
+  Rel(app, api, "Calls card operations", "REST")
+  Rel(api, guard, "Checks customer ownership", "in process")
+  Rel(api, cap, "Checks save limit", "in process")
+  Rel(api, view, "Formats card labels", "in process")
+  Rel(guard, repo, "Loads customer cards", "SQL")
+  Rel(cap, repo, "Counts stored cards", "SQL")
+  Rel(api, tok, "Requests token deletion", "HTTPS")
+  Rel(repo, vdb, "Persists card rows", "SQL")
