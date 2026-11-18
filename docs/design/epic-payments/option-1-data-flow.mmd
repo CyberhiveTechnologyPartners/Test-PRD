@@ -1,0 +1,12 @@
+flowchart TB
+  A[Customer at payment step] --> B[Hosted field collects PAN and CVV]
+  B --> C[Contoso Pay returns token and card metadata]
+  C --> D[Portal payment endpoint receives token and save flag]
+  D --> E[Charge requested from Contoso Pay]
+  E -->|declined| F[Failure returned, nothing stored]
+  E -->|succeeded, flag unticked| G[Order confirmed, nothing stored]
+  E -->|succeeded, flag ticked| H[Saved Card Manager checks owner and count]
+  H -->|fewer than five| I[Row written: token, brand, last four, expiry]
+  H -->|already five| J[Success plus cap message returned]
+  I --> K[Checkout list filters by customer and expiry]
+  K --> L[Removal deletes row and calls token delete]
