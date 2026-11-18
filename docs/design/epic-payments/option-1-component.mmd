@@ -1,0 +1,17 @@
+C4Component
+  title Component view - Portal Application saved cards
+  Container(spa, "Checkout Web App", "TypeScript", "Payment step UI")
+  Component(checkout, "Checkout Payment Endpoint", "Controller", "Confirms payment and save flag")
+  Component(acct, "Account Cards Endpoint", "Controller", "Lists and removes cards")
+  Component(cards, "Saved Card Manager", "Service", "Cap, ownership, expiry rules")
+  ComponentDb(repo, "Saved Card Store", "SQL table", "Token, brand, last four, expiry")
+  Component(payclient, "Contoso Pay Client", "HTTP client", "Charges and deletes tokens")
+  System_Ext(pay, "Contoso Pay", "Payment gateway")
+  Rel(spa, checkout, "Posts payment request", "JSON")
+  Rel(spa, acct, "Lists and removes cards", "JSON")
+  Rel(checkout, cards, "Requests card save", "in process")
+  Rel(acct, cards, "Delegates list remove", "in process")
+  Rel(cards, repo, "Reads writes card rows", "SQL")
+  Rel(cards, payclient, "Deletes stored token", "REST")
+  Rel(checkout, payclient, "Charges hosted field token", "REST")
+  Rel(payclient, pay, "Calls gateway API", "HTTPS")
