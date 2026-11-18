@@ -2,40 +2,46 @@ import type { ReactNode } from 'react';
 
 import { IllustrativeFigure } from './IllustrativeFigure';
 import {
-  activeMemberId,
   getFacilityById,
   getMemberById,
   isOverdue,
-  selectByScope,
+  scopeFacilityId,
+  scopeMemberId,
+  selectForScope,
+  selectReportsForScope,
 } from './cyberData';
-import type { CyberScopeSelection } from './cyberData';
+import type { ScopedFixtures, ScopedReport } from './cyberData';
 import { useCyberScope } from './cyberScope';
 
 /**
  * The member-facing screens.
  *
- * Every one of them derives its rows from `selectByScope(role, facilityId)`
- * and from nothing else, so choosing a facility in the header re-scopes all of
- * them at once: there is no second, screen-local read path that could keep
- * showing another facility's work.
+ * Every one of them derives its rows from the current scope — role, member and
+ * facility — on every render, and from nothing else, so choosing a member in
+ * the sidebar or a facility in the header re-scopes all of them at once: there
+ * is no screen-local copy of the fixtures that could keep showing the previous
+ * context's work.
  */
 function useMemberScope(): {
-  selection: CyberScopeSelection;
+  selection: ScopedFixtures;
+  reports: ScopedReport[];
   facilityId?: string;
   facilityName: string;
   facilitySite: string;
+  memberId?: string;
   memberName: string;
 } {
-  const { role, facilityId } = useCyberScope();
-  const memberId = activeMemberId(role, facilityId);
-  const facility = getFacilityById(facilityId);
-  const inScope = facility !== undefined && facility.memberId === memberId ? facility : undefined;
+  const { scope } = useCyberScope();
+  const memberId = scopeMemberId(scope);
+  const facility = getFacilityById(scopeFacilityId(scope));
 
   return {
-    selection: selectByScope(role, facilityId),
-    facilityId: inScope?.id,
-    facilityName: inScope?.name ?? 'All facilities',
-    facilitySite: inScope?.site ?? 'All facilities',
+    selection: selectForScope(scope),
+    reports: selectReportsForScope(scope),
+    facilityId: facility?.id,
+    facilityName: facility?.name ?? 'All facilities',
+    facilitySite: facility?.site ?? 'All facilities',
+    memberId,
     memberName: memberId === undefined ? 'All members' : getMemberById(memberId)?.name ?? memberId,
   };
 }
@@ -45,6 +51,7 @@ function MemberScreen({
   title,
   facilityId,
   facilitySite,
+  memberId,
   memberName,
   count,
   children,
@@ -53,6 +60,7 @@ function MemberScreen({
   title: string;
   facilityId?: string;
   facilitySite: string;
+  memberId?: string;
   memberName: string;
   count: number;
   children: ReactNode;
@@ -62,6 +70,7 @@ function MemberScreen({
       className="cyber-screen"
       data-testid={testId}
       data-facility={facilityId ?? 'all'}
+      data-member={memberId ?? 'all'}
       data-rows={count}
     >
       <h1>{title}</h1>
@@ -77,7 +86,8 @@ function MemberScreen({
 
 /** Facility-scoped incidents: `GET /cyber/member/incidents`. */
 export function MemberIncidents() {
-  const { selection, facilityId, facilityName, facilitySite, memberName } = useMemberScope();
+  const { selection, facilityId, facilityName, facilitySite, memberId, memberName } =
+    useMemberScope();
   const incidents = selection.incidents;
 
   return (
@@ -86,6 +96,7 @@ export function MemberIncidents() {
       title="Incidents"
       facilityId={facilityId}
       facilitySite={facilitySite}
+      memberId={memberId}
       memberName={memberName}
       count={incidents.length}
     >
@@ -132,7 +143,8 @@ export function MemberIncidents() {
 
 /** Facility-scoped findings: `GET /cyber/member/findings`. */
 export function MemberFindings() {
-  const { selection, facilityId, facilityName, facilitySite, memberName } = useMemberScope();
+  const { selection, facilityId, facilityName, facilitySite, memberId, memberName } =
+    useMemberScope();
   const findings = selection.findings;
 
   return (
@@ -141,6 +153,7 @@ export function MemberFindings() {
       title="Findings"
       facilityId={facilityId}
       facilitySite={facilitySite}
+      memberId={memberId}
       memberName={memberName}
       count={findings.length}
     >
@@ -181,10 +194,8 @@ export function MemberFindings() {
 
 /** Facility-scoped reports: `GET /cyber/member/reports`. */
 export function MemberReports() {
-  const { selection, facilityId, facilityName, facilitySite, memberName } = useMemberScope();
-  const reports = [...selection.reports].sort((left, right) =>
-    right.month.localeCompare(left.month),
-  );
+  const { reports, facilityId, facilityName, facilitySite, memberId, memberName } =
+    useMemberScope();
 
   return (
     <MemberScreen
@@ -192,6 +203,7 @@ export function MemberReports() {
       title="Reports"
       facilityId={facilityId}
       facilitySite={facilitySite}
+      memberId={memberId}
       memberName={memberName}
       count={reports.length}
     >

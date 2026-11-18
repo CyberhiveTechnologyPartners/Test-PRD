@@ -1,34 +1,41 @@
-import { createContext, useContext, useSyncExternalStore } from 'react';
-import type { ReactNode } from 'react';
-
 import {
-  CYBER_ROLES,
+  CyberScopeProvider as ScopeProvider,
+  currentCyberQuery,
+  getCyberScope,
+  getCyberScopeShellState,
+  scopeFromQuery,
+  scopeToQuery,
+  setCyberScope,
+  setCyberScopeSearch,
+  useCyberScope,
+} from './CyberScopeContext';
+import {
+  DEFAULT_CYBER_SCOPE,
   DEFAULT_MEMBER_ID,
   getDefaultFacilityId,
   getFacilityById,
   isMemberRole,
+  normaliseRole,
 } from './cyberData';
-import type { CyberRole } from './cyberData';
+import type { CyberRole, CyberRoleName, CyberScope } from './cyberData';
 
-export type { CyberRole };
+export type { CyberRole, CyberRoleName, CyberScope };
 
 /**
- * Who is looking at the cyber module, and at which facility.
+ * The shell's view of the demo scope.
  *
- * The state lives in one module-level store rather than in component state so
- * that the header's role switcher, the header's facility selector, the sidebar
- * and every screen read exactly the same value, and so a test can drive the
- * same `setRole` / `setFacility` the header calls and re-render.
+ * The scope itself — role, facility and member — lives in
+ * `CyberScopeContext.tsx`, in the URL query string. This module is the shell's
+ * own door onto it: the role and facility pair the header, the sidebar and the
+ * /cyber screens were written against, and the setters they call, all reading
+ * and writing that one store so no two of them can disagree.
  */
 export type CyberScopeState = {
   role: CyberRole;
   facilityId?: string;
 };
 
-export type CyberScope = CyberScopeState & {
-  setRole(role: CyberRole): void;
-  setFacility(id: string): void;
-};
+export type { CyberScopeValue } from './CyberScopeContext';
 
 /** The scope a fresh load starts in: the Program Lead, no facility. */
 export const INITIAL_CYBER_SCOPE: CyberScopeState = { role: 'program-lead', facilityId: undefined };
@@ -36,9 +43,9 @@ export const INITIAL_CYBER_SCOPE: CyberScopeState = { role: 'program-lead', faci
 /**
  * The facility a role should hold after a switch.
  *
- * Switching between a program-lead and a member role resets the facility: the
- * Program Lead is not scoped to one, and a member role must land on a facility
- * of its own member rather than keep whatever was selected before.
+ * Switching between a HealthPRO role and a member role resets the facility:
+ * a HealthPRO role is not scoped to one, and a member role must land on a
+ * facility of its own member rather than keep whatever was selected before.
  */
 export function facilityAfterRoleChange(
   nextRole: CyberRole,
@@ -52,101 +59,53 @@ export function facilityAfterRoleChange(
 }
 
 /**
- * The scope a link can ask for: `?role=member-it&facility=fac-002`.
+ * The role and facility a link asks for: `?role=member-it&facility=fac-002`.
  *
- * It makes a cyber screen shareable in the state it was looked at, and it is
- * read once, on load — the header's switchers own the scope from then on. An
- * unknown role or a facility that is not the role's own is ignored rather than
- * obeyed, so a hand-edited link cannot put the shell in a scope its own
- * controls could not reach.
+ * The whole scope a link may carry — the member included — is
+ * `scopeFromQuery`; this is the pair the shell shipped with, kept so the
+ * header and its specs read the same shape they always did.
  */
 export function scopeFromSearch(search: string): CyberScopeState {
-  const params = new URLSearchParams(search);
-  const requestedRole = params.get('role');
-  const role = CYBER_ROLES.some((entry) => entry.id === requestedRole)
-    ? (requestedRole as CyberRole)
-    : INITIAL_CYBER_SCOPE.role;
-
-  if (!isMemberRole(role)) return { role, facilityId: undefined };
-
-  const requestedFacility = params.get('facility') ?? undefined;
-  return { role, facilityId: facilityAfterRoleChange(role, requestedFacility) };
+  const scope = scopeFromQuery(search);
+  return { role: scope.role, facilityId: scope.facilityId ?? undefined };
 }
 
-let state: CyberScopeState =
-  typeof window === 'undefined'
-    ? { ...INITIAL_CYBER_SCOPE }
-    : scopeFromSearch(window.location.search);
-const listeners = new Set<() => void>();
-
-function emit(): void {
-  for (const listener of [...listeners]) listener();
-}
-
-function subscribe(listener: () => void): () => void {
-  listeners.add(listener);
-  return () => {
-    listeners.delete(listener);
-  };
-}
-
-/** The current scope, outside React. */
+/** The current role and facility, outside React. */
 export function getCyberScopeState(): CyberScopeState {
-  return state;
+  return getCyberScopeShellState();
 }
 
-/** Select a role. Resets the facility when crossing the program/member line. */
+/** Select a role. Resets the facility and member when the role cannot see them. */
 export function setCyberRole(role: CyberRole): void {
-  const facilityId = facilityAfterRoleChange(role, state.facilityId);
-  if (state.role === role && state.facilityId === facilityId) return;
-  state = { role, facilityId };
-  emit();
+  setCyberScope({ role: normaliseRole(role) ?? DEFAULT_CYBER_SCOPE.role });
 }
 
 /** Choose a facility. This is what the header's facility selector calls. */
 export function setCyberFacility(id: string): void {
-  if (state.facilityId === id) return;
-  state = { ...state, facilityId: id };
-  emit();
+  setCyberScope({ facilityId: id });
 }
 
 /** Put the scope back to a fresh load. Used by tests between cases. */
 export function resetCyberScope(): void {
-  state = { ...INITIAL_CYBER_SCOPE };
-  emit();
+  setCyberScope({ ...DEFAULT_CYBER_SCOPE });
 }
 
-const CyberScopeContext = createContext<CyberScopeState | null>(null);
-
-export type CyberScopeProviderProps = {
-  children: ReactNode;
+export {
+  currentCyberQuery,
+  getCyberScope,
+  scopeFromQuery,
+  scopeToQuery,
+  setCyberScope,
+  setCyberScopeSearch,
+  useCyberScope,
 };
+
+export type { CyberScopeProviderProps } from './CyberScopeContext';
 
 /**
  * Makes the scope available to the tree. Mounted once, around the whole app
  * shell, so the header, the sidebar and the screens cannot disagree.
  */
-export function CyberScopeProvider({ children }: CyberScopeProviderProps) {
-  const snapshot = useSyncExternalStore(subscribe, getCyberScopeState, getCyberScopeState);
+export const CyberScopeProvider = ScopeProvider;
 
-  return <CyberScopeContext.Provider value={snapshot}>{children}</CyberScopeContext.Provider>;
-}
-
-/**
- * The active role and facility, with the two setters the header uses.
- *
- * Usable outside the provider as well — it falls back to the store — so a
- * screen rendered on its own in a test still sees the scope it was given.
- */
-export function useCyberScope(): CyberScope {
-  const fromContext = useContext(CyberScopeContext);
-  const fallback = useSyncExternalStore(subscribe, getCyberScopeState, getCyberScopeState);
-  const current = fromContext ?? fallback;
-
-  return {
-    role: current.role,
-    facilityId: current.facilityId,
-    setRole: setCyberRole,
-    setFacility: setCyberFacility,
-  };
-}
+export default CyberScopeProvider;

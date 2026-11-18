@@ -420,8 +420,34 @@ export type Facility = {
   city: string;
 };
 
-/** The three demo roles the /cyber shell offers. */
-export type CyberRole = 'program-lead' | 'member-exec' | 'member-it';
+/**
+ * The demo roles the /cyber shell offers.
+ *
+ * The first three are the roles the shell shipped with. The last three are the
+ * roles this requirement adds, so a demo can be deep-linked as a member's
+ * security lead, as a member's operations contact, or as HealthPRO itself.
+ *
+ * The ids stay in the shell's own kebab-case namespace, because the screens,
+ * the fixtures and the shell's own specs are written against them. The agreed
+ * public names — `ProgramLead`, `MemberExec`, `MemberSecLead`, `MemberOps`,
+ * `HealthPRO` — are the `CyberRoleName` union below, and a URL may carry
+ * either spelling: `CYBER_ROLE_ALIASES` maps one onto the other.
+ */
+export type CyberRole =
+  | 'program-lead'
+  | 'member-exec'
+  | 'member-it'
+  | 'member-sec-lead'
+  | 'member-ops'
+  | 'healthpro';
+
+/** The names a deep link may spell a role with, beside the ids above. */
+export type CyberRoleName =
+  | 'ProgramLead'
+  | 'MemberExec'
+  | 'MemberSecLead'
+  | 'MemberOps'
+  | 'HealthPRO';
 
 /** A record that belongs to one facility of one member. */
 export type FacilityScoped = { facilityId: string };
@@ -481,21 +507,66 @@ export const SHELL_SEED: number = SHELL.seed;
  */
 export const DEFAULT_MEMBER_ID = 'mem-lakeshore';
 
-/** The three roles, in the order the role switcher lists them. */
+/** The three roles the header's own switcher shipped with, in its order. */
 export const CYBER_ROLES: { id: CyberRole; label: string }[] = [
   { id: 'program-lead', label: 'HealthPRO Program Lead' },
   { id: 'member-exec', label: 'Member Executive' },
   { id: 'member-it', label: 'Member IT Lead' },
 ];
 
-/** The label the role switcher shows for a role. */
+/** The three roles this requirement adds, in the order they are offered. */
+export const NEW_CYBER_ROLES: { id: CyberRole; label: string }[] = [
+  { id: 'member-sec-lead', label: 'Member Security Lead' },
+  { id: 'member-ops', label: 'Member Operations' },
+  { id: 'healthpro', label: 'HealthPRO Service Desk' },
+];
+
+/** Every demo role, in the order the sidebar's role switcher lists them. */
+export const ALL_CYBER_ROLES: { id: CyberRole; label: string }[] = [
+  ...CYBER_ROLES,
+  ...NEW_CYBER_ROLES,
+];
+
+/**
+ * The agreed public name of each role, and the id it resolves to.
+ *
+ * A deep link may carry either — `?role=MemberSecLead` and
+ * `?role=member-sec-lead` put the shell in the same scope.
+ */
+export const CYBER_ROLE_ALIASES: Record<CyberRoleName | string, CyberRole> = {
+  ProgramLead: 'program-lead',
+  MemberExec: 'member-exec',
+  MemberIT: 'member-it',
+  MemberSecLead: 'member-sec-lead',
+  MemberOps: 'member-ops',
+  HealthPRO: 'healthpro',
+};
+
+/**
+ * The role a value asks for, or `undefined` when nothing in the demo answers
+ * to it. Both the id and the public name are accepted; anything else — a
+ * hand-edited link, a role that was removed — resolves to nothing, and the
+ * caller falls back to the default scope.
+ */
+export function normaliseRole(value: string | null | undefined): CyberRole | undefined {
+  if (value === null || value === undefined || value === '') return undefined;
+  if (ALL_CYBER_ROLES.some((entry) => entry.id === value)) return value as CyberRole;
+  return CYBER_ROLE_ALIASES[value];
+}
+
+/** The label the role switchers show for a role. */
 export function roleLabel(role: CyberRole): string {
-  return CYBER_ROLES.find((entry) => entry.id === role)?.label ?? role;
+  return ALL_CYBER_ROLES.find((entry) => entry.id === role)?.label ?? role;
 }
 
 /** Whether a role signs in on behalf of a member rather than of HealthPRO. */
 export function isMemberRole(role: CyberRole): boolean {
-  return role === 'member-exec' || role === 'member-it';
+  return (
+    role === 'member-exec' ||
+    role === 'member-it' ||
+    role === 'member-sec-lead' ||
+    role === 'member-ops'
+  );
 }
 
 /** Every facility in the data set, members in table order. */
@@ -596,6 +667,107 @@ export function selectByScope(role: CyberRole, facilityId?: string): CyberScopeS
   };
 }
 
+/* ------------------------------------------------------------------ *
+ * The demo scope: role, facility and member, and the one pure read
+ * path the screens derive every row from.
+ *
+ * The scope itself is held — and written to the URL query — by
+ * `CyberScopeContext.tsx`. Everything here is a pure function of it, so a
+ * screen cannot cache a slice of the fixtures and go stale: it asks for the
+ * slice again on every render, with the scope it was given.
+ * ------------------------------------------------------------------ */
+
+/** Who is looking at the cyber module, at which facility, for which member. */
+export type CyberScope = {
+  role: CyberRole;
+  facilityId: string | null;
+  memberId: string | null;
+};
+
+/** The scope a load with no query string — and no choice yet — starts in. */
+export const DEFAULT_CYBER_SCOPE: CyberScope = {
+  role: 'program-lead',
+  facilityId: null,
+  memberId: null,
+};
+
+/** The rows a scoped read returns, by entity. */
+export type MemberRow = CyberMember;
+export type FindingRow = ScopedFinding;
+export type TicketRow = CyberTicket;
+export type IncidentRow = ScopedIncident;
+
+/** Everything a screen may show under one scope. */
+export type ScopedFixtures = {
+  members: MemberRow[];
+  findings: FindingRow[];
+  tickets: TicketRow[];
+  incidents: IncidentRow[];
+};
+
+/**
+ * The member a scope acts for: the one it names, else the owner of the
+ * facility it is on, else the demo member login. A HealthPRO role acts for no
+ * single member, so this is `undefined` for those.
+ */
+export function scopeMemberId(scope: CyberScope): string | undefined {
+  if (!isMemberRole(scope.role)) return undefined;
+  if (scope.memberId !== null && getMemberById(scope.memberId) !== undefined) {
+    return scope.memberId;
+  }
+  return getFacilityById(scope.facilityId ?? undefined)?.memberId ?? DEFAULT_MEMBER_ID;
+}
+
+/**
+ * The facility a scope narrows to: the selected one, but only while it is a
+ * facility of the member the scope acts for. A facility of another member — or
+ * one of the posture data set's own facilities — narrows nothing.
+ */
+export function scopeFacilityId(scope: CyberScope): string | undefined {
+  const memberId = scopeMemberId(scope);
+  if (memberId === undefined) return undefined;
+  const facility = getFacilityById(scope.facilityId ?? undefined);
+  return facility?.memberId === memberId ? facility.id : undefined;
+}
+
+/**
+ * Every row one scope may see, members included.
+ *
+ * A HealthPRO role sees the whole portfolio. A member role sees its own
+ * organisation only, and — once a facility of that member is selected — only
+ * the records of that facility. Nothing downstream filters again.
+ */
+export function selectForScope(scope: CyberScope): ScopedFixtures {
+  const memberId = scopeMemberId(scope);
+
+  if (memberId === undefined) {
+    return {
+      members: getMembers(),
+      findings: getScopedFindings(),
+      tickets: getTickets(),
+      incidents: getScopedIncidents(),
+    };
+  }
+
+  const facilityId = scopeFacilityId(scope);
+  const member = getMemberById(memberId);
+
+  return {
+    members: member === undefined ? [] : [member],
+    findings: getScopedFindings(memberId, facilityId),
+    tickets: getTickets(memberId),
+    incidents: getScopedIncidents(memberId, facilityId),
+  };
+}
+
+/** The reports one scope may see, newest month first. */
+export function selectReportsForScope(scope: CyberScope): ScopedReport[] {
+  const memberId = scopeMemberId(scope);
+  return getScopedReports(memberId, scopeFacilityId(scope)).sort((left, right) =>
+    right.month.localeCompare(left.month),
+  );
+}
+
 /** The SLA / MTTA rows, for one member or for all of them, oldest month first. */
 export function getServicePerformance(memberId?: string): ServicePerformanceRow[] {
   return memberId === undefined
@@ -646,6 +818,16 @@ export function getPortfolioRows(): PortfolioRow[] {
       slaAttainmentPercent: performance?.slaAttainmentPercent ?? 100,
     };
   });
+}
+
+/**
+ * The portfolio summary one scope may see: every member for a HealthPRO role,
+ * and the member's own row for a member role, so a deep link into the
+ * portfolio as a member never shows another member's figures.
+ */
+export function getPortfolioRowsForScope(scope: CyberScope): PortfolioRow[] {
+  const visible = new Set(selectForScope(scope).members.map((member) => member.id));
+  return getPortfolioRows().filter((row) => visible.has(row.memberId));
 }
 
 /* ------------------------------------------------------------------ *
