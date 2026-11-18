@@ -1,0 +1,17 @@
+C4Container
+  title Container view - Webhook driven token persistence
+  Person(customer, "Customer", "Signed-in shopper")
+  Container(spa, "Checkout Web App", "TypeScript", "Payment and account cards UI")
+  Container(app, "Portal Application", "Server", "Checkout and account APIs")
+  ContainerQueue(q, "Card Events Queue", "Broker", "Save and delete intents")
+  Container(worker, "Card Token Worker", "Consumer", "Applies rules, calls gateway")
+  ContainerDb(db, "Portal Database", "SQL", "Saved card records")
+  System_Ext(pay, "Contoso Pay", "Hosted field and webhooks")
+  Rel(customer, spa, "Uses checkout page", "HTTPS")
+  Rel(spa, pay, "Mounts hosted field", "JS SDK")
+  Rel(spa, app, "Submits payment request", "JSON")
+  Rel(pay, app, "Posts payment webhook", "HTTPS")
+  Rel(app, q, "Publishes card events", "AMQP")
+  Rel(app, db, "Reads saved cards", "SQL")
+  Rel(worker, q, "Consumes card events", "AMQP")
+  Rel(worker, db, "Writes card records", "SQL")
