@@ -1,0 +1,12 @@
+flowchart TB
+  A[Payment step reads card list and count] --> B[Checkbox state and cap message rendered]
+  B --> C[Hosted field tokenises card or saved card selected]
+  C --> D[Portal charges Contoso Pay and records save intent]
+  D --> E[Contoso Pay posts payment outcome webhook]
+  E -->|declined| F[No card event published]
+  E -->|succeeded and save ticked| G[Save event published to queue]
+  G --> H[Worker filters duplicates, checks owner and count]
+  H -->|under cap| I[Card row written with brand last four expiry]
+  H -->|at cap| J[Event dropped, cap message already shown]
+  I --> K[Checkout and account pages read rows, expired greyed out]
+  K --> L[Removal publishes delete event, worker retries gateway]
