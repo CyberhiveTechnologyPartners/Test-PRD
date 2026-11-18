@@ -1,0 +1,15 @@
+C4Container
+  title Container view - Dedicated saved cards service
+  Person(customer, "Customer", "Signed-in shopper")
+  Container(spa, "Checkout Web App", "TypeScript", "Payment and account cards UI")
+  Container(app, "Portal Application", "Server", "Checkout and orders")
+  Container(vault, "Saved Cards Service", "Service API", "Token lifecycle and cap")
+  ContainerDb(vdb, "Saved Cards Database", "SQL", "Card records per customer")
+  System_Ext(pay, "Contoso Pay", "Hosted field and tokens")
+  Rel(customer, spa, "Uses checkout page", "HTTPS")
+  Rel(spa, pay, "Mounts hosted field", "JS SDK")
+  Rel(spa, app, "Submits payment request", "JSON")
+  Rel(app, vault, "Lists saves removes cards", "REST")
+  Rel(app, pay, "Charges payment token", "REST")
+  Rel(vault, vdb, "Stores card records", "SQL")
+  Rel(vault, pay, "Deletes card tokens", "REST")
