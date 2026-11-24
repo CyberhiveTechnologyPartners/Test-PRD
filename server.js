@@ -41,6 +41,11 @@ http.createServer((req, res) => {
     });
     return;
   }
+  // A scanner probing paths would otherwise end its own session, so logout needs a POST.
+  if (path === "/logout" && req.method !== "POST") {
+    res.writeHead(405, safe);
+    return res.end("use POST");
+  }
   if (path === "/logout") {
     sessions.delete(cookieOf(req));
     sessions.delete(bearerOf(req));
