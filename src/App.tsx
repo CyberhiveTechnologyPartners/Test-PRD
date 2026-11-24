@@ -9,7 +9,7 @@ import CyberSidebar from './CyberSidebar';
 import FacilitySelector from './FacilitySelector';
 import { IllustrativeNotice } from './IllustrativeFigure';
 import TierCatalogue from './TierCatalogue';
-import { CYBER_ROLES, activeMemberId, isMemberRole } from './cyberData';
+import { CYBER_ROLES, isMemberRole, roleLabel, scopeMemberId } from './cyberData';
 import type { CyberRole } from './cyberData';
 import { CyberScopeProvider, useCyberScope } from './cyberScope';
 import {
@@ -103,30 +103,43 @@ function CyberPocScreen({ path }: { path: string }) {
  */
 function CyberPocRoutes() {
   const path = usePath();
+  const { scope } = useCyberScope();
   const resolved = path === '/cyber-poc/' ? '/cyber-poc' : path;
+  // Keyed by the scope: a role, member or facility change swaps the screen
+  // rather than updating it in place, so no filter or list of the previous
+  // context can survive the change.
+  const scopeKey = `${scope.role}:${scope.memberId ?? '-'}:${scope.facilityId ?? '-'}`;
 
   return (
     <CyberPocScopeProvider>
       <div className="cyber-group" data-testid="cyber-poc-group" data-path={resolved}>
-        <CyberPocScreen path={resolved} />
+        <CyberPocScreen key={scopeKey} path={resolved} />
       </div>
     </CyberPocScopeProvider>
   );
 }
 
-/** The header's role switcher: the three demo roles, driving the cyber scope. */
+/**
+ * The header's role switcher: the three roles the header shipped with, and —
+ * when a deep link has asked for one of the roles this requirement adds — that
+ * role too, so the control always shows the scope the URL is actually in. The
+ * whole set of roles is offered by the sidebar's own switcher.
+ */
 function RoleSwitcher() {
-  const { role, setRole } = useCyberScope();
+  const { role, setScope } = useCyberScope();
+  const entries = CYBER_ROLES.some((entry) => entry.id === role)
+    ? CYBER_ROLES
+    : [...CYBER_ROLES, { id: role, label: roleLabel(role) }];
 
   function handleChange(event: ChangeEvent<HTMLSelectElement>): void {
-    setRole(event.target.value as CyberRole);
+    setScope({ role: event.target.value as CyberRole });
   }
 
   return (
     <label className="shell-header__role" data-testid="role-switcher">
       <span className="shell-header__label">Role</span>
       <select aria-label="Role" data-testid="role-select" value={role} onChange={handleChange}>
-        {CYBER_ROLES.map((entry) => (
+        {entries.map((entry) => (
           <option key={entry.id} value={entry.id}>
             {entry.label}
           </option>
@@ -208,8 +221,8 @@ function SearchPalette() {
 /** The app shell: header, ⌘K search, role switcher, left sidebar and outlet. */
 function Shell() {
   const path = usePath();
-  const { role, facilityId } = useCyberScope();
-  const memberId = activeMemberId(role, facilityId);
+  const { scope, role } = useCyberScope();
+  const memberId = scopeMemberId(scope);
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent): void {
@@ -249,9 +262,7 @@ function Shell() {
         </button>
 
         <RoleSwitcher />
-        {isMemberRole(role) && memberId !== undefined ? (
-          <FacilitySelector memberId={memberId} />
-        ) : null}
+        {isMemberRole(role) && memberId !== undefined ? <FacilitySelector /> : null}
       </header>
 
       <div className="app-shell__body">

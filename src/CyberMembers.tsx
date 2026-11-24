@@ -1,11 +1,17 @@
 import { IllustrativeFigure } from './IllustrativeFigure';
-import { getFacilities, selectByScope } from './cyberData';
+import { getFacilities, selectForScope } from './cyberData';
 import { useCyberScope } from './cyberScope';
 
-/** The member directory: the eight member organisations and their facilities. */
+/**
+ * The member directory: the member organisations the current scope may see,
+ * and the facilities each one runs.
+ *
+ * The rows are selected from the scope on every render — never copied into
+ * component state — so a role, member or facility change swaps them outright.
+ */
 export function CyberMembers() {
-  const { role, facilityId } = useCyberScope();
-  const { members } = selectByScope(role, facilityId);
+  const { scope } = useCyberScope();
+  const { members } = selectForScope(scope);
 
   return (
     <section className="cyber-screen" data-testid="cyber-members">
@@ -14,7 +20,7 @@ export function CyberMembers() {
         Member organisations in the programme, with the facilities each one runs.
       </p>
 
-      <table className="cyber-table" data-testid="members-table">
+      <table className="cyber-table" data-testid="members-table" data-rows={members.length}>
         <caption>Member organisations</caption>
         <thead>
           <tr>

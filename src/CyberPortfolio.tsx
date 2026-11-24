@@ -1,17 +1,24 @@
 import { IllustrativeFigure } from './IllustrativeFigure';
-import { getPortfolioRows, getShellMonths } from './cyberData';
+import { getPortfolioRowsForScope, getShellMonths } from './cyberData';
+import { useCyberScope } from './cyberScope';
 
 /**
  * The Program Lead's first screen: one row per member, with the figures the
  * programme is steered by. Every number goes through IllustrativeFigure.
+ *
+ * The rows are selected from the current scope on every render, so a member
+ * role deep-linked here sees its own organisation and nothing else, and a
+ * role or member change swaps the table rather than leaving the previous
+ * context's rows behind.
  */
 export function CyberPortfolio() {
-  const rows = getPortfolioRows();
+  const { scope } = useCyberScope();
+  const rows = getPortfolioRowsForScope(scope);
   const months = getShellMonths();
   const latestMonth = months[months.length - 1];
 
   return (
-    <section className="cyber-screen" data-testid="cyber-portfolio">
+    <section className="cyber-screen" data-testid="cyber-portfolio" data-rows={rows.length}>
       <h1>Portfolio</h1>
       <p className="cyber-screen__lede">
         Every member organisation in the programme, with posture, open work and service

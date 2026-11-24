@@ -9,7 +9,7 @@ import CyberPortfolio from './CyberPortfolio';
 import CyberServicePerformance from './CyberServicePerformance';
 import { landingPathForRole } from './CyberSidebar';
 import IllustrativeBanner from './IllustrativeBanner';
-import { useCyberScope } from './cyberScope';
+import { CyberScopeProvider, currentCyberQuery, useCyberScope } from './cyberScope';
 import './cyber.css';
 
 /* ------------------------------------------------------------------ *
@@ -53,7 +53,13 @@ export function setCurrentPath(path: string | null): void {
   emitPath();
 }
 
-/** Go to a path: history entry in the browser, notification either way. */
+/**
+ * Go to a path: history entry in the browser, notification either way.
+ *
+ * The scope the shell is in travels with the move — the query string is
+ * carried onto the new path — so walking the sidebar keeps the role, the
+ * member and the facility the screen was deep-linked in.
+ */
 export function navigate(path: string): void {
   if (typeof window === 'undefined') {
     overriddenPath = path;
@@ -61,7 +67,10 @@ export function navigate(path: string): void {
     return;
   }
   if (overriddenPath !== null) overriddenPath = path;
-  if (window.location.pathname !== path) window.history.pushState({}, '', path);
+  const query = currentCyberQuery();
+  if (window.location.pathname !== path) {
+    window.history.pushState({}, '', `${path}${query}${window.location.hash}`);
+  }
   emitPath();
 }
 
@@ -146,14 +155,20 @@ function Screen({ path }: { path: string }) {
  */
 export function CyberRoutes() {
   const path = usePath();
-  const { role } = useCyberScope();
+  const { scope, role } = useCyberScope();
   const resolved = path === '/cyber' || path === '/cyber/' ? landingPathForRole(role) : path;
+  // Keyed by the scope: switching role, member or facility swaps the screen
+  // instead of updating it in place, so nothing of the previous context can
+  // survive the change.
+  const scopeKey = `${scope.role}:${scope.memberId ?? '-'}:${scope.facilityId ?? '-'}`;
 
   return (
-    <div className="cyber-group" data-testid="cyber-group" data-path={resolved}>
-      <IllustrativeBanner />
-      <Screen path={resolved} />
-    </div>
+    <CyberScopeProvider>
+      <div className="cyber-group" data-testid="cyber-group" data-path={resolved}>
+        <IllustrativeBanner />
+        <Screen key={scopeKey} path={resolved} />
+      </div>
+    </CyberScopeProvider>
   );
 }
 
