@@ -1,6 +1,6 @@
-const http = require("node:http");
-const fs = require("node:fs");
-const crypto = require("node:crypto");
+import http from "node:http";
+import fs from "node:fs";
+import crypto from "node:crypto";
 
 const USERS = "/tmp/hive-dast-users.json";
 const sessions = new Set();

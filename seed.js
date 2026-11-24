@@ -1,4 +1,4 @@
-const fs = require("node:fs");
+import fs from "node:fs";
 
 const USERS = "/tmp/hive-dast-users.json";
 let users = {};
