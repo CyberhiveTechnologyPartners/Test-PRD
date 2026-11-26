@@ -1,0 +1,60 @@
+sequenceDiagram
+  actor Approver
+  participant Routes as REST Route Layer
+  participant Session as Session and Role Resolver
+  participant Policy as Segregation of Duties Policy
+  participant ApprovalSvc as Approval Service
+  participant EntryRepo as Entry Repository
+  participant HistRepo as History Repository (insert-only)
+
+  Approver->>Routes: POST /api/finance/entries/{id}/reject {reason}
+  Routes->>Session: resolve caller identity and roles
+  Session-->>Routes: {userId, roles:[financeApprover]}
+  Routes->>Policy: authorise(caller, entry, action=reject)
+  Policy->>EntryRepo: load entry (status, createdBy)
+  EntryRepo-->>Policy: entry{status=submitted, createdBy}
+  alt caller created the entry
+    Policy-->>Routes: 403 forbidden - creator cannot decide own entry
+    Routes-->>Approver: 403 Forbidden
+  else caller did not create entry
+    Policy-->>Routes: authorised
+    Routes->>ApprovalSvc: reject(entryId, reason, actorId)
+    alt reason shorter than 10 characters or empty
+      ApprovalSvc-->>Routes: 400 invalid reason
+      Routes-->>Approver: 400 Bad Request, entry unchanged
+    else reason valid
+      ApprovalSvc->>EntryRepo: update status submitted -> draft
+      EntryRepo-->>ApprovalSvc: ok
+      ApprovalSvc->>HistRepo: append {entryId, action=reject, reason, actorId, occurredAt}
+      HistRepo-->>ApprovalSvc: inserted
+      ApprovalSvc-->>Routes: {status: draft}
+      Routes-->>Approver: 200 OK {status: draft}
+    end
+  end
+
+  Approver->>Routes: POST /api/finance/entries/{id}/approve
+  Routes->>Session: resolve caller identity and roles
+  Session-->>Routes: {userId, roles:[financeApprover]}
+  Routes->>Policy: authorise(caller, entry, action=approve)
+  Policy->>EntryRepo: load entry (status, createdBy)
+  EntryRepo-->>Policy: entry{status=submitted, createdBy}
+  Policy-->>Routes: authorised (caller did not create entry)
+  Routes->>ApprovalSvc: approve(entryId, actorId)
+  ApprovalSvc->>EntryRepo: update status submitted -> approved
+  EntryRepo-->>ApprovalSvc: ok
+  ApprovalSvc->>HistRepo: append {entryId, action=approve, actorId, occurredAt}
+  HistRepo-->>ApprovalSvc: inserted
+  ApprovalSvc-->>Routes: {status: approved}
+  Routes-->>Approver: 200 OK {status: approved}
+%% Files this story is expected to touch:
+%% - server/index.ts
+%% - server/routes/approvals.ts
+%% - server/session.ts
+%% - server/policy.ts
+%% - server/services/approvalService.ts
+%% - server/repositories/entryRepository.ts
+%% - server/repositories/historyRepository.ts
+%% - server/db/schema.sql
+%% - server/approvals.spec.ts
+%% - package.json
+%% - vitest.config.ts
