@@ -1,0 +1,17 @@
+C4Component
+  title Components of the Finance API Service
+  Component(routes, "REST Route Layer", "Node", "Entry, submit and decision endpoints")
+  Component(session, "Session and Role Resolver", "TypeScript", "Identifies caller and held roles")
+  Component(policy, "Segregation of Duties Policy", "TypeScript", "Creator approval and auditor write blocks")
+  Component(entrysvc, "Journal Entry Service", "TypeScript", "Balance check and status machine")
+  Component(approvalsvc, "Approval Service", "TypeScript", "Approve, reject, reason validation")
+  ComponentDb(entryrepo, "Entry Repository", "SQL", "Entries and lines")
+  ComponentDb(histrepo, "History Repository", "SQL insert-only", "Submit approve reject rows")
+  Rel(routes, session, "Resolves caller identity")
+  Rel(routes, policy, "Authorises each call")
+  Rel(routes, entrysvc, "Creates submits entries")
+  Rel(routes, approvalsvc, "Approves rejects entries")
+  Rel(entrysvc, entryrepo, "Persists entry state")
+  Rel(approvalsvc, entryrepo, "Updates entry status")
+  Rel(entrysvc, histrepo, "Appends submit rows")
+  Rel(approvalsvc, histrepo, "Appends decision rows")
