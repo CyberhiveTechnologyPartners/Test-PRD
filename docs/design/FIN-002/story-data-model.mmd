@@ -1,0 +1,26 @@
+erDiagram
+  JOURNAL_ENTRY {
+    uuid id PK
+    string status "draft|submitted|approved|rejected"
+    uuid creator_id
+    timestamp created_at
+    timestamp updated_at
+    boolean balanced
+  }
+  JOURNAL_LINE {
+    uuid id PK
+    uuid entry_id FK
+    string account_code
+    numeric debit
+    numeric credit
+  }
+  ENTRY_HISTORY {
+    uuid id PK
+    uuid entry_id FK
+    string action "submit|approve|reject"
+    uuid actor_id
+    string reason
+    timestamp occurred_at
+  }
+  JOURNAL_ENTRY ||--o{ JOURNAL_LINE : contains
+  JOURNAL_ENTRY ||--o{ ENTRY_HISTORY : logs
