@@ -1,0 +1,15 @@
+C4Container
+  title Container view - service worker mock HTTP API
+  Person(accountant, "Accountant", "Creates and submits entries")
+  Person(approver, "Finance Approver", "Approves or rejects entries")
+  Person(auditor, "Auditor", "Read-only access")
+  Container(spa, "React SPA Shell", "Vite React", "Finance screens and fetch client")
+  Container(worker, "Mock API Worker", "Service Worker", "Intercepts finance HTTP requests")
+  Container(handlers, "Finance Request Handlers", "TypeScript", "Routes, rules and status codes")
+  ContainerDb(idb, "Ledger Database", "IndexedDB", "Entries, lines and history rows")
+  Rel(accountant, spa, "Uses finance screens")
+  Rel(approver, spa, "Uses approvals queue")
+  Rel(auditor, spa, "Reads entry pages")
+  Rel(spa, worker, "Sends REST requests", "fetch")
+  Rel(worker, handlers, "Dispatches matched routes")
+  Rel(handlers, idb, "Reads writes records")
