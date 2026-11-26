@@ -1,0 +1,44 @@
+sequenceDiagram
+  participant User
+  participant SPA as React SPA (Journal Entry Page)
+  participant Routes as REST Route Layer
+  participant Session as Session and Role Resolver
+  participant Policy as SoD Policy
+  participant ApprovalSvc as Approval Service
+  participant HistRepo as History Repository (append-only)
+
+  User->>SPA: Open manual journal entry page
+  SPA->>Routes: GET /api/entries/{entryId}/history
+  Routes->>Session: Resolve caller identity and roles
+  Session-->>Routes: Caller context
+  Routes->>Policy: Authorise read of entry history
+  Policy-->>Routes: Allowed
+  Routes->>ApprovalSvc: getHistory(entryId)
+  ApprovalSvc->>HistRepo: SELECT rows WHERE entryId ORDER BY actedAt DESC
+  HistRepo-->>ApprovalSvc: submit, reject, resubmit, approve rows
+  ApprovalSvc-->>Routes: history ordered newest first
+  Routes-->>SPA: 200 JSON [ {action, actingUser, actedAt, reason}, ... ]
+  SPA-->>User: Render approval history list, newest first, no edit/delete controls
+
+  Note over User,HistRepo: Any attempt to mutate a history row is refused
+  User->>SPA: Issue edit or delete request against a history row
+  SPA->>Routes: PATCH or DELETE /api/entries/{entryId}/history/{historyId}
+  Routes->>Policy: Authorise mutation of history
+  Policy-->>Routes: Denied - history table is insert-only
+  Routes-->>SPA: 405 Method Not Allowed
+  SPA-->>User: Show refusal, history list unchanged
+%% Files this story is expected to touch:
+%% - server/package.json
+%% - server/src/index.ts
+%% - server/src/routes/approvalHistory.ts
+%% - server/src/services/sessionRoleResolver.ts
+%% - server/src/services/segregationOfDutiesPolicy.ts
+%% - server/src/services/approvalService.ts
+%% - server/src/services/journalEntryService.ts
+%% - server/src/repositories/historyRepository.ts
+%% - server/src/repositories/entryRepository.ts
+%% - server/src/db/migrations/001_init_entries.sql
+%% - server/src/db/migrations/002_approval_history.sql
+%% - src/finance/JournalEntryPage.tsx
+%% - src/finance/ApprovalHistoryList.tsx
+%% - src/finance/financeApi.ts
