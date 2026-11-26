@@ -1,0 +1,17 @@
+flowchart TB
+  user["Member IT Lead picks period"] --> state["Period state in screen"]
+  scope["useCyberScope role and facilityId"] --> key["activeMemberId plus period window"]
+  state --> key
+  fixtures["cyberFunnelMonthly, cyberTickets, cyberLogSources, cyberTiers JSON"] --> sel["Pure monitoring selectors"]
+  key --> sel
+  sel --> funnel["Stage counts and drop-off"]
+  sel --> tickets["Tickets with 0-2d, 3-7d, 8-30d, 30+d buckets"]
+  sel --> sla["SLA met percent versus tier targets"]
+  sel --> logs["Sources flagged silent over 24h"]
+  sel --> cov["Coverage by asset class"]
+  funnel --> view["Monitoring panels with illustrative labels"]
+  tickets --> view
+  sla --> view
+  logs --> view
+  cov --> view
+  view --> user
