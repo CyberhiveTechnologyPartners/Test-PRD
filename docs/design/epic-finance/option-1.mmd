@@ -1,0 +1,13 @@
+C4Container
+  title Container view - in-app finance API module
+  Person(accountant, "Accountant", "Creates and submits entries")
+  Person(approver, "Finance Approver", "Approves or rejects entries")
+  Person(auditor, "Auditor", "Read-only access")
+  Container(spa, "React SPA Shell", "Vite React", "App shell, hand-rolled routing, finance screens")
+  Container(finapi, "Finance API Module", "TypeScript", "Only writer of ledger state, returns status codes")
+  ContainerDb(store, "Ledger Store", "localStorage", "Entries, lines and approval history")
+  Rel(accountant, spa, "Uses finance screens")
+  Rel(approver, spa, "Uses approvals queue")
+  Rel(auditor, spa, "Reads entry pages")
+  Rel(spa, finapi, "Calls typed commands", "Function call")
+  Rel(finapi, store, "Reads writes state", "JSON")
