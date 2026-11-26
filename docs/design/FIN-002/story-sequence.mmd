@@ -1,0 +1,51 @@
+sequenceDiagram
+  participant UI as React SPA
+  participant Routes as REST Route Layer
+  participant Session as Session/Role Resolver
+  participant Policy as SoD Policy
+  participant EntrySvc as Journal Entry Service
+  participant EntryRepo as Entry Repository
+  participant HistRepo as History Repository (insert-only)
+
+  Note over UI,HistRepo: Scenario 1 - submit a balanced draft
+  UI->>Routes: POST /api/finance/entries/{id}/submit
+  Routes->>Session: resolve caller identity and roles
+  Session-->>Routes: {userId, roles:[accountant]}
+  Routes->>Policy: authorise(submit, caller, entry.creatorId)
+  Policy-->>Routes: allowed
+  Routes->>EntrySvc: submit(entryId)
+  EntrySvc->>EntryRepo: load entry + lines
+  EntryRepo-->>EntrySvc: entry{status:draft, lines, balanced:true}
+  EntrySvc->>EntrySvc: verify status=draft and balance check passes
+  EntrySvc->>EntryRepo: update status=submitted
+  EntryRepo-->>EntrySvc: ok
+  EntrySvc->>HistRepo: append {entryId, action:submit, by:userId, at:now}
+  HistRepo-->>EntrySvc: appended
+  EntrySvc-->>Routes: entry{status:submitted}
+  Routes-->>UI: 200 {entry}
+
+  Note over UI,HistRepo: Scenario 2 - creator attempts edit after submission
+  UI->>Routes: PATCH /api/finance/entries/{id}/lines/{lineId} {amount}
+  Routes->>Session: resolve caller identity and roles
+  Session-->>Routes: {userId=creator, roles:[accountant]}
+  Routes->>Policy: authorise(editLine, caller, entry.creatorId)
+  Policy-->>Routes: allowed (creator may normally edit own entries)
+  Routes->>EntrySvc: updateLine(entryId, lineId, amount)
+  EntrySvc->>EntryRepo: load entry
+  EntryRepo-->>EntrySvc: entry{status:submitted}
+  EntrySvc->>EntrySvc: status != draft -> reject edit
+  EntrySvc-->>Routes: error LOCKED_FOR_EDITING
+  Routes-->>UI: 409 {error:"entry is submitted and locked"}
+  Note right of EntryRepo: stored entry and lines unchanged
+%% Files this story is expected to touch:
+%% - server/package.json
+%% - server/src/index.ts
+%% - server/src/routes/entries.ts
+%% - server/src/session/roleResolver.ts
+%% - server/src/policy/segregationOfDuties.ts
+%% - server/src/services/journalEntryService.ts
+%% - server/src/repositories/entryRepository.ts
+%% - server/src/repositories/historyRepository.ts
+%% - server/src/db/migrations/0001_init.sql
+%% - server/src/services/journalEntryService.spec.ts
+%% - server/src/routes/entries.spec.ts
