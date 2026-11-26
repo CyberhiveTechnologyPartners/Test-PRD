@@ -1,0 +1,11 @@
+flowchart TB
+  A[User action on finance screen] --> B[Finance screen component]
+  B --> C[Finance API module call]
+  C --> D{Role and SoD guard}
+  D -- refused 403 --> E[Refusal shown in UI]
+  D -- allowed --> F{Balance, status and reason rules}
+  F -- refused --> E
+  F -- valid --> G[Entry state updated]
+  G --> H[History event appended]
+  H --> I[(localStorage ledger)]
+  I --> J[Approvals queue and entry page re-render]
