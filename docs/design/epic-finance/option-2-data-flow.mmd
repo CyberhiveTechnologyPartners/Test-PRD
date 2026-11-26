@@ -1,0 +1,12 @@
+flowchart TB
+  A[User action on finance screen] --> B[fetch call to finance endpoint]
+  B --> C[Service worker intercept]
+  C --> D[Finance request handler]
+  D --> E{Role and creator checks}
+  E -- HTTP 403 --> F[UI hides control and shows refusal]
+  E -- passes --> G{Balance, status and reason rules}
+  G -- HTTP 422 --> F
+  G -- valid --> H[Entry record written]
+  H --> I[History row appended]
+  I --> J[(IndexedDB ledger)]
+  J --> K[JSON response to approvals queue and entry page]
