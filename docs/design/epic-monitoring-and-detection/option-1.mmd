@@ -1,0 +1,15 @@
+C4Container
+  title Containers for the Member IT Lead monitoring screen
+  Person(itLead, "Member IT Lead", "Selects facility and period")
+  Container_Boundary(prd, "Test-PRD prototype") {
+    Container(shell, "App shell", "React", "Header, sidebar, outlet")
+    Container(routes, "Cyber route group", "React", "Hand-rolled /cyber routing")
+    Container(monitor, "Monitoring screen", "React", "Funnel, tickets, SLA, logs, coverage")
+    Container(selectors, "Monitoring selectors", "TypeScript", "Pure period scoped metrics")
+    ContainerDb(fixtures, "Cyber fixtures", "JSON", "Funnel, tickets, log sources, tiers")
+  }
+  Rel(itLead, shell, "Opens monitoring screen", "Browser")
+  Rel(shell, routes, "Delegates cyber paths")
+  Rel(routes, monitor, "Renders monitoring screen")
+  Rel(monitor, selectors, "Requests period metrics")
+  Rel(selectors, fixtures, "Reads bundled records")
