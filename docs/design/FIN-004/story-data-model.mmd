@@ -1,0 +1,17 @@
+erDiagram
+  JOURNAL_ENTRY {
+    string id PK
+    string status
+    string createdBy
+    datetime createdAt
+    datetime updatedAt
+  }
+  ENTRY_HISTORY {
+    string id PK
+    string entryId FK
+    string action
+    string actorId
+    string reason
+    datetime occurredAt
+  }
+  JOURNAL_ENTRY ||--o{ ENTRY_HISTORY : "has append-only history"
