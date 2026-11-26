@@ -1,0 +1,24 @@
+erDiagram
+  JOURNAL_ENTRY ||--o{ JOURNAL_ENTRY_LINE : contains
+  JOURNAL_ENTRY ||--o{ JOURNAL_ENTRY_HISTORY : logs
+  JOURNAL_ENTRY {
+    uuid id PK
+    string status
+    string createdBy
+    timestamp createdAt
+    timestamp updatedAt
+  }
+  JOURNAL_ENTRY_LINE {
+    uuid id PK
+    uuid journalEntryId FK
+    string account
+    string lineType
+    numeric amount
+  }
+  JOURNAL_ENTRY_HISTORY {
+    uuid id PK
+    uuid journalEntryId FK
+    string action
+    string actor
+    timestamp occurredAt
+  }
