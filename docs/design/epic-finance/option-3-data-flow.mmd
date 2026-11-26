@@ -1,0 +1,11 @@
+flowchart TB
+  A[User action on finance screen] --> B[HTTP request to finance API]
+  B --> C[Route and session layer]
+  C --> D{Role policy middleware}
+  D -- HTTP 403 --> E[UI shows refusal and hides control]
+  D -- allowed --> F{SoD and entry state machine}
+  F -- refused --> E
+  F -- valid --> G[Entry row updated in transaction]
+  G --> H[History row inserted append only]
+  H --> I[(Relational database)]
+  I --> J[Queue and entry page responses]
