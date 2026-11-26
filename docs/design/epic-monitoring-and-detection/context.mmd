@@ -1,0 +1,11 @@
+C4Context
+  title System context for the illustrative cyber monitoring prototype
+  Person(itLead, "Member IT Lead", "Reviews detection and tickets")
+  Person(programLead, "HealthPRO Program Lead", "Reviews all members")
+  Person(memberExec, "Member Executive", "Reviews member summaries")
+  System(prd, "Test-PRD prototype", "React SPA with bundled illustrative cyber fixtures")
+  System_Ext(vite, "Vite dev server", "Serves the built bundle")
+  Rel(itLead, prd, "Views monitoring screen", "Browser")
+  Rel(programLead, prd, "Switches role scope", "Browser")
+  Rel(memberExec, prd, "Views member screens", "Browser")
+  Rel(vite, prd, "Serves app bundle", "HTTP")
