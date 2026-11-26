@@ -1,0 +1,40 @@
+erDiagram
+  USER ||--o{ USER_ROLE : holds
+  ROLE ||--o{ USER_ROLE : grants
+  USER_ROLE }o--|| ROLE : "role=auditor|preparer|approver"
+  JOURNAL_ENTRY ||--o{ JOURNAL_ENTRY_LINE : contains
+  JOURNAL_ENTRY ||--o{ APPROVAL_HISTORY_ENTRY : logs
+  USER ||--o{ APPROVAL_HISTORY_ENTRY : performs
+  USER {
+    string id PK
+    string displayName
+  }
+  ROLE {
+    string id PK
+    string name
+  }
+  USER_ROLE {
+    string userId FK
+    string roleId FK
+  }
+  JOURNAL_ENTRY {
+    string id PK
+    string status
+    string createdBy FK
+    datetime createdAt
+  }
+  JOURNAL_ENTRY_LINE {
+    string id PK
+    string entryId FK
+    string account
+    numeric debit
+    numeric credit
+  }
+  APPROVAL_HISTORY_ENTRY {
+    string id PK
+    string entryId FK
+    string action
+    string performedBy FK
+    string reason
+    datetime occurredAt
+  }
