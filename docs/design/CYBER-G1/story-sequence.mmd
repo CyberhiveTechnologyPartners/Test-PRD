@@ -1,43 +1,40 @@
 sequenceDiagram
-  participant User
-  participant Shell as Shell (App.tsx)
-  participant Portfolio as CyberPortfolio
-  participant Scope as cyberScope (useCyberScope)
-  participant Data as cyberData selectors
+  participant Lead as Program Lead (browser)
+  participant Shell as Shell/CyberRoutes
+  participant Scope as CyberScopeContext
+  participant Portfolio as CyberPortfolio screen
+  participant Data as cyberData/selectors (fixtures)
   participant MemberHome as CyberMemberScreens
 
-  User->>Shell: navigate to /cyber/portfolio
-  Shell->>Scope: useCyberScope() role check
-  Scope-->>Shell: role = HealthPRO Program Lead
+  Lead->>Shell: navigate to /cyber/portfolio
+  Shell->>Scope: useCyberScope() read role
+  Scope-->>Shell: role = Program Lead
   Shell->>Portfolio: render CyberPortfolio
-  Portfolio->>Data: loadPortfolioMembers()
-  Data-->>Portfolio: members, tiers, grades, metrics (fixtures)
-  Portfolio->>Data: computeKpiStrip(members)
-  Data-->>Portfolio: enrolled, avgGrade, openP1P2, slaMetPct, remediationPct
-  Portfolio->>Data: computeGradeDistributionAndTierMix(members, filters)
-  Data-->>Portfolio: distribution, tierMix
-  Portfolio->>Data: computeAttentionList(members)
-  Data-->>Portfolio: rankedRows with reason
-  Portfolio->>Data: computeProvinceGroups(members)
-  Data-->>Portfolio: provinceGroups with grade colour
-  Portfolio->>Data: computeFacilityTypeMedianBenchmark(members, facilityType)
-  Data-->>Portfolio: medianMetrics
-  Portfolio-->>User: render KPI strip, filterable chart, attention list, province view, benchmark panel, AI-generated illustrative summary
-  User->>Portfolio: change facility type / province filter
-  Portfolio->>Data: computeGradeDistributionAndTierMix(members, newFilters)
-  Data-->>Portfolio: updated distribution, tierMix
-  Portfolio-->>User: re-render chart only
-  User->>Portfolio: click member row in attention list
-  Portfolio->>Scope: setViewAs(memberId, {readOnly:true})
+  Portfolio->>Data: load cyberMembers, cyberTiers, cyberFindings, cyberIncidents (all facilities)
+  Data-->>Portfolio: full portfolio rows
+  Portfolio->>Portfolio: compute KPI strip (enrolled, avg grade, open P1/P2, SLA met %, remediation %)
+  Portfolio-->>Lead: render KPI strip, grade distribution, tier mix, AI summary (static, labelled illustrative)
+  Lead->>Portfolio: set facility type / province filter
+  Portfolio->>Data: recompute distribution + tier mix + median benchmark over filtered subset
+  Data-->>Portfolio: filtered aggregates + facility-type median
+  Portfolio-->>Lead: updated chart and benchmark panel
+  Portfolio->>Portfolio: rank members by attention score (open P1, grade drop, overdue criticals, silent sources)
+  Portfolio-->>Lead: render attention list with one-line reasons
+  Portfolio-->>Lead: render province grouping with grade colour indicator
+  Lead->>Portfolio: click member row
+  Portfolio->>Scope: set viewAs(memberId, readOnly=true)
   Scope-->>Portfolio: ack
-  Portfolio->>MemberHome: navigate(/cyber/members/:memberId)
-  MemberHome->>Scope: useCyberScope() reads viewAs flag
-  Scope-->>MemberHome: readOnly=true, memberId
-  MemberHome-->>User: render member home, mutating actions disabled, banner shows read-only view-as state
+  Portfolio->>Shell: navigate(/cyber/members/:id)
+  Shell->>MemberHome: render member home
+  MemberHome->>Scope: useCyberScope() read readOnly flag
+  Scope-->>MemberHome: readOnly = true
+  MemberHome-->>Lead: render member home with illustrative banner, mutating actions disabled
 %% Files this story is expected to touch:
 %% - src/CyberPortfolio.tsx
+%% - src/CyberRoutes.tsx
+%% - src/CyberScopeContext.tsx
 %% - src/cyberData.ts
-%% - src/cyberScope.tsx
 %% - src/CyberMemberScreens.tsx
 %% - src/cyber.css
+%% - src/CyberSidebar.tsx
 %% - src/portfolio.spec.ts
