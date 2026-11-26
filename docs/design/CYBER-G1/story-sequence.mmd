@@ -1,0 +1,43 @@
+sequenceDiagram
+  participant User
+  participant Shell as Shell (App.tsx)
+  participant Portfolio as CyberPortfolio
+  participant Scope as cyberScope (useCyberScope)
+  participant Data as cyberData selectors
+  participant MemberHome as CyberMemberScreens
+
+  User->>Shell: navigate to /cyber/portfolio
+  Shell->>Scope: useCyberScope() role check
+  Scope-->>Shell: role = HealthPRO Program Lead
+  Shell->>Portfolio: render CyberPortfolio
+  Portfolio->>Data: loadPortfolioMembers()
+  Data-->>Portfolio: members, tiers, grades, metrics (fixtures)
+  Portfolio->>Data: computeKpiStrip(members)
+  Data-->>Portfolio: enrolled, avgGrade, openP1P2, slaMetPct, remediationPct
+  Portfolio->>Data: computeGradeDistributionAndTierMix(members, filters)
+  Data-->>Portfolio: distribution, tierMix
+  Portfolio->>Data: computeAttentionList(members)
+  Data-->>Portfolio: rankedRows with reason
+  Portfolio->>Data: computeProvinceGroups(members)
+  Data-->>Portfolio: provinceGroups with grade colour
+  Portfolio->>Data: computeFacilityTypeMedianBenchmark(members, facilityType)
+  Data-->>Portfolio: medianMetrics
+  Portfolio-->>User: render KPI strip, filterable chart, attention list, province view, benchmark panel, AI-generated illustrative summary
+  User->>Portfolio: change facility type / province filter
+  Portfolio->>Data: computeGradeDistributionAndTierMix(members, newFilters)
+  Data-->>Portfolio: updated distribution, tierMix
+  Portfolio-->>User: re-render chart only
+  User->>Portfolio: click member row in attention list
+  Portfolio->>Scope: setViewAs(memberId, {readOnly:true})
+  Scope-->>Portfolio: ack
+  Portfolio->>MemberHome: navigate(/cyber/members/:memberId)
+  MemberHome->>Scope: useCyberScope() reads viewAs flag
+  Scope-->>MemberHome: readOnly=true, memberId
+  MemberHome-->>User: render member home, mutating actions disabled, banner shows read-only view-as state
+%% Files this story is expected to touch:
+%% - src/CyberPortfolio.tsx
+%% - src/cyberData.ts
+%% - src/cyberScope.tsx
+%% - src/CyberMemberScreens.tsx
+%% - src/cyber.css
+%% - src/portfolio.spec.ts
