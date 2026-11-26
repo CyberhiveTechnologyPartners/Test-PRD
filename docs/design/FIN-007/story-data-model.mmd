@@ -1,0 +1,16 @@
+erDiagram
+  JOURNAL_ENTRY {
+    string id PK
+    string status
+    string createdBy
+    datetime createdAt
+  }
+  APPROVAL_HISTORY {
+    string id PK
+    string entryId FK
+    string action "submit, approve, reject, resubmit"
+    string actingUser
+    datetime actedAt
+    string reason
+  }
+  JOURNAL_ENTRY ||--o{ APPROVAL_HISTORY : has
