@@ -1,0 +1,48 @@
+sequenceDiagram
+  participant User
+  participant Shell as Shell (App.tsx)
+  participant Router as CyberRoutes
+  participant Sidebar as CyberSidebar
+  participant Screen as CyberMonitoring
+  participant Scope as useCyberScope
+  participant Sel as cyberMonitoringSelectors
+  participant Fixtures as cyber*.json fixtures
+
+  User->>Sidebar: click 'Monitoring' link
+  Sidebar->>Router: navigate('/cyber/monitoring')
+  Router->>Screen: render CyberMonitoring
+  Screen->>Scope: read role, facilityId
+  Scope-->>Screen: {role, facilityId}
+  Screen->>Screen: init period state = '30 days'
+  Screen->>Sel: getFunnel(facilityId, period)
+  Sel->>Fixtures: read cyberFunnelMonthly.json
+  Fixtures-->>Sel: monthly rows
+  Sel-->>Screen: stage counts + drop-off
+  Screen->>Sel: getOpenTickets(facilityId, period)
+  Sel->>Fixtures: read cyberTickets.json
+  Fixtures-->>Sel: tickets
+  Sel-->>Screen: bucketed rows (0-2d/3-7d/8-30d/30+d)
+  Screen->>Sel: getSlaByPriority(facilityId, period)
+  Sel->>Fixtures: read cyberTickets.json, cyberTiers.json
+  Fixtures-->>Sel: tickets + tier targets
+  Sel-->>Screen: met % vs target per priority
+  Screen->>Sel: getLogSourceHealth(facilityId)
+  Sel->>Fixtures: read cyberLogSources.json
+  Fixtures-->>Sel: sources with lastSeen
+  Sel-->>Screen: sources flagged silent >24h
+  Screen->>Sel: getCoverageByAssetClass(facilityId)
+  Sel->>Fixtures: read cyberLogSources.json
+  Fixtures-->>Sel: coverage rows
+  Sel-->>Screen: coverage shares
+  Screen-->>User: render funnel, tickets, SLA, log health, coverage panels
+  User->>Screen: change period selector to '7 days' or 'quarter'
+  Screen->>Sel: recompute all five getters with new period
+  Sel-->>Screen: updated panel data
+  Screen-->>User: panels re-render for new period
+%% Files this story is expected to touch:
+%% - src/CyberMonitoring.tsx
+%% - src/cyberMonitoringSelectors.ts
+%% - src/CyberRoutes.tsx
+%% - src/CyberSidebar.tsx
+%% - src/cyber.css
+%% - src/monitoring.spec.ts
