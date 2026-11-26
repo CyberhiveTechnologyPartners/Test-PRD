@@ -1,0 +1,52 @@
+sequenceDiagram
+  actor Creator
+  actor Approver
+  participant SPA as React SPA (FinanceEntryPage)
+  participant API as REST Route Layer
+  participant Session as Session/Role Resolver
+  participant Policy as SoD Policy
+  participant ApprovalSvc as Approval Service
+  participant EntryRepo as Entry Repository
+  participant HistRepo as History Repository
+
+  Creator->>SPA: Open entry page
+  SPA->>API: GET /api/journal-entries/:id
+  API->>Session: Resolve caller identity & roles
+  Session-->>API: {userId, roles:[finance-approver]}
+  API->>EntryRepo: Load entry
+  EntryRepo-->>API: entry {id, createdBy, status: submitted}
+  API-->>SPA: entry + caller context
+  SPA->>SPA: isCreator = caller.userId === entry.createdBy
+  SPA-->>Creator: Render entry page, Approve control omitted
+
+  Creator->>API: POST /api/journal-entries/:id/approve
+  API->>Session: Resolve caller identity & roles
+  Session-->>API: {userId, roles:[finance-approver]}
+  API->>EntryRepo: Load entry
+  EntryRepo-->>API: entry {createdBy, status: submitted}
+  API->>Policy: canApprove(caller, entry)
+  Policy-->>API: denied (caller is creator)
+  API-->>Creator: 403 Forbidden, entry.status unchanged
+
+  Approver->>API: POST /api/journal-entries/:id/approve
+  API->>Session: Resolve caller identity & roles
+  Session-->>API: {userId, roles:[finance-approver]}
+  API->>EntryRepo: Load entry
+  EntryRepo-->>API: entry {createdBy, status: submitted}
+  API->>Policy: canApprove(caller, entry)
+  Policy-->>API: allowed (caller is not creator)
+  API->>ApprovalSvc: approve(entry, caller)
+  ApprovalSvc->>EntryRepo: update status=approved
+  ApprovalSvc->>HistRepo: append decision row (approve, caller, timestamp)
+  ApprovalSvc-->>API: success
+  API-->>Approver: 200 OK {status: approved}
+%% Files this story is expected to touch:
+%% - server/src/routes/approvals.ts
+%% - server/src/services/segregationOfDutiesPolicy.ts
+%% - server/src/services/approvalService.ts
+%% - server/src/session.ts
+%% - server/src/db/entryRepository.ts
+%% - server/src/db/historyRepository.ts
+%% - server/test/approvals.spec.ts
+%% - src/FinanceEntryPage.tsx
+%% - src/financeApi.ts
