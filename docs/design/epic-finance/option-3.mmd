@@ -1,0 +1,13 @@
+C4Container
+  title Container view - dedicated finance backend service
+  Person(accountant, "Accountant", "Creates and submits entries")
+  Person(approver, "Finance Approver", "Approves or rejects entries")
+  Person(auditor, "Auditor", "Read-only access")
+  Container(spa, "React SPA Shell", "Vite React", "Finance screens and approvals queue")
+  Container(api, "Finance API Service", "Node REST", "Endpoints, rules and authorisation")
+  ContainerDb(db, "Finance Database", "SQL", "Entries, lines and history rows")
+  Rel(accountant, spa, "Creates submits entries")
+  Rel(approver, spa, "Approves rejects entries")
+  Rel(auditor, spa, "Reads entries history")
+  Rel(spa, api, "Calls REST endpoints", "JSON HTTP")
+  Rel(api, db, "Reads writes rows", "SQL")
