@@ -1,0 +1,17 @@
+C4Component
+  title Components of the Finance API Module
+  Component(dispatch, "Command Dispatcher", "TypeScript", "Maps calls to handlers and status codes")
+  Component(guard, "Role and SoD Guard", "TypeScript", "Creator cannot approve, auditor read-only")
+  Component(entries, "Journal Entry Service", "TypeScript", "Draft creation, balance check, submit lock")
+  Component(approvals, "Approval Service", "TypeScript", "Approve, reject, reason length rule")
+  Component(history, "History Log Writer", "TypeScript", "Append-only submit approve reject rows")
+  ComponentDb(repo, "Ledger Repository", "localStorage", "Serialised entries and history")
+  Component_Ext(scope, "Role Scope Provider", "React context", "Supplies the active user and role")
+  Rel(dispatch, guard, "Authorises each call")
+  Rel(dispatch, entries, "Creates submits entries")
+  Rel(dispatch, approvals, "Approves rejects entries")
+  Rel(guard, scope, "Reads active role")
+  Rel(entries, history, "Appends submit events")
+  Rel(approvals, history, "Appends decision events")
+  Rel(entries, repo, "Persists entry state")
+  Rel(history, repo, "Appends history rows")
