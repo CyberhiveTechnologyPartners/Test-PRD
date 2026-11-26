@@ -1,75 +1,77 @@
 sequenceDiagram
-  participant Auditor
-  participant Browser as Finance SPA
+  participant UI as FinanceEntryPage (SPA)
   participant Routes as REST Route Layer
-  participant Session as Session/Role Resolver
-  participant Policy as Segregation of Duties Policy
+  participant Session as Session and Role Resolver
+  participant Policy as SoD Policy
   participant EntrySvc as Journal Entry Service
   participant ApprovalSvc as Approval Service
   participant EntryRepo as Entry Repository
   participant HistRepo as History Repository
-  Auditor->>Browser: Open entry page
-  Browser->>Routes: GET /api/finance/entries/:id
-  Routes->>Session: resolve caller role
-  Session-->>Routes: role = auditor
-  Routes->>Policy: authorize(read, entry)
+
+  Note over UI: Auditor opens a posted entry's page
+  UI->>Routes: GET /api/finance/entries/:id
+  Routes->>Session: resolveCallerRoles(request)
+  Session-->>Routes: roles=[auditor]
+  Routes->>Policy: authorize(action=read, roles=[auditor])
   Policy-->>Routes: allowed
   Routes->>EntrySvc: getEntry(id)
   EntrySvc->>EntryRepo: findById(id)
   EntryRepo-->>EntrySvc: entry
-  EntrySvc-->>Routes: entry
-  Routes-->>Browser: 200 entry
-  Browser->>Routes: GET /api/finance/entries/:id/history
-  Routes->>Session: resolve caller role
-  Session-->>Routes: role = auditor
-  Routes->>Policy: authorize(read, history)
-  Policy-->>Routes: allowed
   Routes->>ApprovalSvc: getHistory(id)
-  ApprovalSvc->>HistRepo: findByEntry(id)
+  ApprovalSvc->>HistRepo: listByEntry(id)
   HistRepo-->>ApprovalSvc: history rows
   ApprovalSvc-->>Routes: history
-  Routes-->>Browser: 200 history
-  Browser-->>Auditor: render entry + full approval history, action buttons disabled
-  Auditor->>Browser: call approve endpoint
-  Browser->>Routes: POST /api/finance/entries/:id/approve
-  Routes->>Session: resolve caller role
-  Session-->>Routes: role = auditor
-  Routes->>Policy: authorize(approve, entry)
+  EntrySvc-->>Routes: entry
+  Routes-->>UI: 200 {entry, history}
+  UI-->>UI: render read-only entry and full approval history, hide/disable write actions
+
+  Note over UI: Auditor calls approve on a submitted entry
+  UI->>Routes: POST /api/finance/entries/:id/approve
+  Routes->>Session: resolveCallerRoles(request)
+  Session-->>Routes: roles=[auditor]
+  Routes->>Policy: authorize(action=approve, roles=[auditor])
   Policy-->>Routes: denied
-  Routes-->>Browser: 403 Forbidden, entry unchanged
-  Auditor->>Browser: call reject endpoint
-  Browser->>Routes: POST /api/finance/entries/:id/reject
-  Routes->>Session: resolve caller role
-  Session-->>Routes: role = auditor
-  Routes->>Policy: authorize(reject, entry)
+  Routes-->>UI: 403 {error: role not permitted}
+  Note over EntryRepo,HistRepo: no status change, no history row appended
+
+  Note over UI: Auditor calls reject on the same submitted entry
+  UI->>Routes: POST /api/finance/entries/:id/reject
+  Routes->>Session: resolveCallerRoles(request)
+  Session-->>Routes: roles=[auditor]
+  Routes->>Policy: authorize(action=reject, roles=[auditor])
   Policy-->>Routes: denied
-  Routes-->>Browser: 403 Forbidden, entry unchanged
-  Auditor->>Browser: call create-entry endpoint
-  Browser->>Routes: POST /api/finance/entries
-  Routes->>Session: resolve caller role
-  Session-->>Routes: role = auditor
-  Routes->>Policy: authorize(create, entry)
+  Routes-->>UI: 403 {error: role not permitted}
+
+  Note over UI: Auditor calls create-entry
+  UI->>Routes: POST /api/finance/entries
+  Routes->>Session: resolveCallerRoles(request)
+  Session-->>Routes: roles=[auditor]
+  Routes->>Policy: authorize(action=create, roles=[auditor])
   Policy-->>Routes: denied
-  Routes-->>Browser: 403 Forbidden, no entry created
-  Auditor->>Browser: call submit-entry endpoint
-  Browser->>Routes: POST /api/finance/entries/:id/submit
-  Routes->>Session: resolve caller role
-  Session-->>Routes: role = auditor
-  Routes->>Policy: authorize(submit, entry)
+  Routes-->>UI: 403 {error: role not permitted}
+  Note over EntryRepo: no entry row inserted
+
+  Note over UI: Auditor calls submit-entry
+  UI->>Routes: POST /api/finance/entries/:id/submit
+  Routes->>Session: resolveCallerRoles(request)
+  Session-->>Routes: roles=[auditor]
+  Routes->>Policy: authorize(action=submit, roles=[auditor])
   Policy-->>Routes: denied
-  Routes-->>Browser: 403 Forbidden, no entry submitted
+  Routes-->>UI: 403 {error: role not permitted}
+  Note over HistRepo: no submit row appended
 %% Files this story is expected to touch:
-%% - server/src/routes/financeEntries.ts
-%% - server/src/routes/financeApprovals.ts
-%% - server/src/session/roleResolver.ts
-%% - server/src/policy/segregationOfDuties.ts
-%% - server/src/services/journalEntryService.ts
-%% - server/src/services/approvalService.ts
-%% - server/src/repositories/entryRepository.ts
-%% - server/src/repositories/historyRepository.ts
-%% - server/db/migrations/0001_finance_schema.sql
-%% - server/package.json
-%% - server/tsconfig.json
-%% - src/FinanceEntryPage.tsx
+%% - src/server/index.ts
+%% - src/server/financeRoutes.ts
+%% - src/server/sessionRoles.ts
+%% - src/server/sodPolicy.ts
+%% - src/server/journalEntryService.ts
+%% - src/server/approvalService.ts
+%% - src/server/entryRepository.ts
+%% - src/server/historyRepository.ts
+%% - src/server/migrations/0001_finance_schema.sql
 %% - src/financeApi.ts
-%% - src/fin-008-auditor-access.spec.ts
+%% - src/FinanceEntryPage.tsx
+%% - src/sodPolicy.spec.ts
+%% - src/finance-auditor.spec.ts
+%% - package.json
+%% - AGENTS.md
