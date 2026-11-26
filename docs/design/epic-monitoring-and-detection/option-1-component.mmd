@@ -1,0 +1,17 @@
+C4Component
+  title Components inside the monitoring screen
+  Container_Boundary(monitor, "Monitoring screen") {
+    Component(period, "Period selector", "React", "7 days, 30 days, quarter")
+    Component(funnel, "Detection funnel panel", "React", "Stage counts and drop-off")
+    Component(tickets, "Open tickets table", "React", "Age bucketed rows")
+    Component(sla, "SLA by priority panel", "React", "Met percent versus targets")
+    Component(logs, "Log source health panel", "React", "Silent source highlighting")
+    Component(coverage, "Coverage by asset class", "React", "Monitored asset share")
+    Component(selectors, "Monitoring selectors", "TypeScript", "Pure scoped computations")
+  }
+  Rel(period, selectors, "Sets active window")
+  Rel(funnel, selectors, "Reads funnel stages")
+  Rel(tickets, selectors, "Reads bucketed tickets")
+  Rel(sla, selectors, "Reads SLA attainment")
+  Rel(logs, selectors, "Reads source staleness")
+  Rel(coverage, selectors, "Reads coverage shares")
