@@ -1,0 +1,11 @@
+C4Context
+  title System context for finance manual journal entries and approvals
+  Person(accountant, "Accountant", "Creates and submits manual journal entries")
+  Person(approver, "Finance Approver", "Approves or rejects submitted entries")
+  Person(auditor, "Auditor", "Reads entries and approval history")
+  System(app, "Test-PRD Innovation Pathway App", "React prototype shell hosting the finance approvals module")
+  System_Ext(store, "Ledger State Store", "Holds entries, lines and approval history for the prototype")
+  Rel(accountant, app, "Creates submits entries")
+  Rel(approver, app, "Approves rejects entries")
+  Rel(auditor, app, "Reads entries history")
+  Rel(app, store, "Stores ledger state", "JSON")
