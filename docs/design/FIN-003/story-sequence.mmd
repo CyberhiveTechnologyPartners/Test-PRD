@@ -1,0 +1,38 @@
+sequenceDiagram
+  participant Browser as Finance Approver Browser
+  participant Screen as FinanceApprovals Screen (SPA)
+  participant Routes as REST Route Layer
+  participant Session as Session and Role Resolver
+  participant Policy as Segregation of Duties Policy
+  participant EntrySvc as Journal Entry Service
+  participant EntryRepo as Entry Repository
+  Browser->>Screen: navigate to /finance/approvals
+  Screen->>Routes: GET /api/finance/approvals
+  Routes->>Session: resolve caller identity and roles
+  Session-->>Routes: identity with roles [finance-approver]
+  Routes->>Policy: authorise(caller, action=view-approvals)
+  Policy-->>Routes: allowed
+  Routes->>EntrySvc: listSubmitted(orderBy=submittedAt asc)
+  EntrySvc->>EntryRepo: findByStatus('submitted', sort=asc)
+  EntryRepo-->>EntrySvc: rows [entry...]
+  EntrySvc-->>Routes: submitted entries oldest first
+  Routes-->>Screen: 200 JSON { entries: [...] }
+  Screen-->>Browser: render approval queue table
+  alt caller lacks finance-approver role
+    Policy-->>Routes: denied
+    Routes-->>Screen: 403 Forbidden
+    Screen-->>Browser: render access denied message
+  end
+%% Files this story is expected to touch:
+%% - server/index.ts
+%% - server/routes/approvals.ts
+%% - server/session.ts
+%% - server/policy.ts
+%% - server/services/entryService.ts
+%% - server/repositories/entryRepository.ts
+%% - server/db/migrations/0001_create_finance_tables.sql
+%% - src/FinanceApprovals.tsx
+%% - src/FinanceRoutes.tsx
+%% - src/App.tsx
+%% - package.json
+%% - vite.config.ts
