@@ -1,0 +1,50 @@
+sequenceDiagram
+  actor Accountant
+  participant Routes as REST Route Layer
+  participant Session as Session and Role Resolver
+  participant Policy as Segregation of Duties Policy
+  participant EntrySvc as Journal Entry Service
+  participant EntryRepo as Entry Repository
+  participant HistRepo as History Repository
+
+  Accountant->>Routes: POST /api/finance/journal-entries (lines)
+  Routes->>Session: resolve caller identity and roles
+  Session-->>Routes: userId, roles[accountant]
+  Routes->>Policy: authorize create(accountant)
+  Policy-->>Routes: allowed
+  Routes->>EntrySvc: createDraft(lines, userId)
+  EntrySvc->>EntryRepo: insert entry status=draft with lines
+  EntryRepo-->>EntrySvc: entry persisted
+  EntrySvc-->>Routes: entry (status draft)
+  Routes-->>Accountant: 201 Created entry draft
+
+  Accountant->>Routes: POST /api/finance/journal-entries/:id/submit
+  Routes->>Session: resolve caller identity and roles
+  Session-->>Routes: userId, roles[accountant]
+  Routes->>Policy: authorize submit(accountant, entry.createdBy)
+  Policy-->>Routes: allowed
+  Routes->>EntrySvc: submit(id)
+  EntrySvc->>EntryRepo: fetch entry and lines
+  EntryRepo-->>EntrySvc: entry, lines
+  EntrySvc->>EntrySvc: computeBalance(lines)
+  alt debit total != credit total
+    EntrySvc-->>Routes: rejected unbalanced, status unchanged
+    Routes-->>Accountant: 409 Conflict, entry still draft
+  else balanced
+    EntrySvc->>EntryRepo: update status=submitted
+    EntrySvc->>HistRepo: append insert-only submit row
+    HistRepo-->>EntrySvc: appended
+    EntrySvc-->>Routes: entry submitted
+    Routes-->>Accountant: 200 OK entry submitted
+  end
+%% Files this story is expected to touch:
+%% - package.json
+%% - server/index.ts
+%% - server/routes/journalEntries.ts
+%% - server/session.ts
+%% - server/policy.ts
+%% - server/services/journalEntryService.ts
+%% - server/repositories/entryRepository.ts
+%% - server/repositories/historyRepository.ts
+%% - server/db/migrations/0001_init.sql
+%% - server/journalEntries.spec.ts
