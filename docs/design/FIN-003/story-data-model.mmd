@@ -1,0 +1,23 @@
+erDiagram
+  JOURNAL_ENTRY ||--o{ JOURNAL_LINE : contains
+  JOURNAL_ENTRY ||--o{ APPROVAL_HISTORY : logs
+  JOURNAL_ENTRY {
+    string id PK
+    string status
+    datetime submitted_at
+    string created_by
+  }
+  JOURNAL_LINE {
+    string id PK
+    string entry_id FK
+    string account
+    decimal debit
+    decimal credit
+  }
+  APPROVAL_HISTORY {
+    string id PK
+    string entry_id FK
+    string action
+    string actor
+    datetime occurred_at
+  }
