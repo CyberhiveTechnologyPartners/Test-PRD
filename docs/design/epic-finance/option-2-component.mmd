@@ -1,0 +1,17 @@
+C4Component
+  title Components of the Mock API Worker
+  Component(matcher, "Request Matcher", "Mock handlers", "Matches finance URL patterns and verbs")
+  Component(identity, "Caller Identity Adapter", "TypeScript", "Resolves user and roles from request")
+  Component(guard, "Role and SoD Guard", "TypeScript", "Creator approval and auditor write blocks")
+  Component(entries, "Entry Handler", "TypeScript", "Draft, balance check, submit lock")
+  Component(approvals, "Approval Handler", "TypeScript", "Approve, reject, reason length check")
+  Component(history, "History Writer", "TypeScript", "Append-only action rows")
+  ComponentDb(idb, "Ledger Store", "IndexedDB", "Entries, lines and history")
+  Rel(matcher, identity, "Resolves calling user")
+  Rel(matcher, guard, "Authorises each request")
+  Rel(matcher, entries, "Handles entry requests")
+  Rel(matcher, approvals, "Handles decision requests")
+  Rel(entries, history, "Appends submit events")
+  Rel(approvals, history, "Appends decision events")
+  Rel(entries, idb, "Reads writes entries")
+  Rel(history, idb, "Appends history rows")
