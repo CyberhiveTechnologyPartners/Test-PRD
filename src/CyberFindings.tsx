@@ -58,6 +58,7 @@ export function CyberFindings() {
       <section
         className="cyber-screen"
         data-testid="cyber-poc-findings"
+        data-role={role}
         data-facility={selectedFacility}
         data-grade={grade}
         data-priority={priority}
