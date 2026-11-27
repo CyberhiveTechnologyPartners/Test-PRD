@@ -28,7 +28,12 @@ export function CyberOverview() {
     <>
       <IllustrativeNotice />
 
-      <section className="cyber-screen" data-testid="cyber-poc-overview" data-facility={facilityId}>
+      <section
+        className="cyber-screen"
+        data-testid="cyber-poc-overview"
+        data-role={role}
+        data-facility={facilityId}
+      >
         <h1>Cyber posture overview</h1>
         <p className="cyber-screen__lede" data-testid="cyber-poc-overview-lede">
           Posture grade and open findings by priority, for every facility this role covers.
